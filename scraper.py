@@ -1,5 +1,7 @@
 """TikTok Dog Account Scraper using Playwright."""
 
+from __future__ import annotations
+
 import asyncio
 import json
 import logging
@@ -7,6 +9,7 @@ import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Optional
 
 from playwright.async_api import async_playwright, Page, BrowserContext
 
