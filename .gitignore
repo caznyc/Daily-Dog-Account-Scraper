@@ -11,3 +11,4 @@ build/
 .pytest_cache/
 *.mp4
 !How england bottled Euros 2020 #premierleague #football #euros #engla....mp4
+!batch1-out/*.mp4
