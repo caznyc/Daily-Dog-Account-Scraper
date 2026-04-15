@@ -12,3 +12,7 @@ build/
 *.mp4
 !How england bottled Euros 2020 #premierleague #football #euros #engla....mp4
 !batch1-out/*.mp4
+
+# Source clips downloaded from the "batch" GitHub Release — not tracked,
+# fetch via the release if you need them.
+batch1/
