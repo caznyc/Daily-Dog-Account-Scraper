@@ -57,20 +57,27 @@ for t in ts:
 
 A = np.median(np.stack(rows), axis=0)
 H = len(A)
-# Threshold 1.5 catches the full sharp band including caption tails that sit
-# right at the lower edge. Asymmetric insets: push the TOP boundary inward by
-# 30 px to clear the gradual blur transition, but expand the BOTTOM by 8 px
-# so in-video captions don't get clipped.
+# Threshold 1.5 catches the full sharp band including caption tails at the
+# lower edge. Insets are CONDITIONAL on whether there's an actual blur/dark
+# band to skip past — so already-cropped sources don't get nibbled.
 thr = 1.5
 sharp = np.where(A > thr)[0]
 if sharp.size == 0:
     print(f"0 {H}")
 else:
-    top = int(sharp[0])
-    bot = int(sharp[-1])
-    top = max(0, ((top + 30)//2)*2)
-    bot = min(H-1, ((bot + 8)//2)*2)
-    h = ((bot - top + 1)//2)*2
+    top_raw = int(sharp[0])
+    bot_raw = int(sharp[-1])
+    # Push TOP boundary inward only if there's >20 px of blur/dark before content
+    if top_raw > 20:
+        top = ((top_raw + 30) // 2) * 2
+    else:
+        top = 0
+    # Expand BOTTOM boundary outward only if there's >20 px of blur/dark after
+    if bot_raw < H - 20:
+        bot = min(H - 1, ((bot_raw + 8) // 2) * 2)
+    else:
+        bot = ((H - 1) // 2) * 2
+    h = ((bot - top + 1) // 2) * 2
     print(f"{top} {h}")
 PY
 )"
@@ -81,16 +88,27 @@ W=$(( (SRC_W/2)*2 ))
 FINAL_H=$(( (W * 16 / 9 / 2) * 2 ))
 CONTENT_H=$CROP_H
 
-# Make sure the cropped content fits inside 9:16
-if (( CONTENT_H >= FINAL_H )); then
-  echo "ERROR: cropped content (${CONTENT_H}) >= 9:16 frame (${FINAL_H}); cannot fit." >&2
-  exit 1
+# For sources that are already tightly cropped (no blur padding), the sharp
+# band can occupy all or most of the frame — leaving no room for a banner.
+# In that case, crop additional rows from the TOP of the sharp band so the
+# video is "lowered" in the final composition (its visible content shifts
+# down below the banner). Enforce a minimum banner height for consistent
+# branding across clips, and a small bottom bar.
+MIN_BANNER=500
+MIN_BOTTOM=100
+MAX_CONTENT=$(( FINAL_H - MIN_BANNER - MIN_BOTTOM ))
+
+if (( CONTENT_H > MAX_CONTENT )); then
+  EXTRA=$(( CONTENT_H - MAX_CONTENT ))
+  CROP_Y=$(( ((CROP_Y + EXTRA) / 2) * 2 ))
+  CONTENT_H=$MAX_CONTENT
+  echo ">>> Content too tall for banner; cropped additional ${EXTRA} px from top (shifts video down)"
 fi
 
 REMAIN=$(( FINAL_H - CONTENT_H ))
-# Distribute remaining space: ~65% to top banner, ~35% to bottom bar
-# (shifts the video down a touch, closer to the reference proportions).
+# Distribute remaining space: ~65% to top banner, ~35% to bottom bar.
 BANNER_H=$(( (REMAIN * 65 / 100 / 2) * 2 ))
+(( BANNER_H < MIN_BANNER )) && BANNER_H=$MIN_BANNER
 BOTTOM_H=$(( FINAL_H - CONTENT_H - BANNER_H ))
 
 # Text styling (~5.2% of width font, left-aligned inset ~3.5% of width)
