@@ -57,19 +57,19 @@ for t in ts:
 
 A = np.median(np.stack(rows), axis=0)
 H = len(A)
-# Threshold: anything above 2.5 std is firmly sharp; below is blur/black.
-# Higher than before (1.5) to skip the soft transition zone at the blur edge.
-thr = 2.5
+# Threshold 1.5 catches the full sharp band including caption tails that sit
+# right at the lower edge. Asymmetric insets: push the TOP boundary inward by
+# 30 px to clear the gradual blur transition, but expand the BOTTOM by 8 px
+# so in-video captions don't get clipped.
+thr = 1.5
 sharp = np.where(A > thr)[0]
 if sharp.size == 0:
-    # Fall back: keep entire frame
     print(f"0 {H}")
 else:
     top = int(sharp[0])
     bot = int(sharp[-1])
-    # Inset 24 px on each side to bite well past the blur transition.
-    top = max(0, ((top + 24)//2)*2)
-    bot = min(H-1, ((bot - 24)//2)*2)
+    top = max(0, ((top + 30)//2)*2)
+    bot = min(H-1, ((bot + 8)//2)*2)
     h = ((bot - top + 1)//2)*2
     print(f"{top} {h}")
 PY
