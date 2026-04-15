@@ -88,13 +88,14 @@ if (( CONTENT_H >= FINAL_H )); then
 fi
 
 REMAIN=$(( FINAL_H - CONTENT_H ))
-# Distribute remaining space: ~60% to top banner, ~40% to bottom bar.
-BANNER_H=$(( (REMAIN * 60 / 100 / 2) * 2 ))
+# Distribute remaining space: ~65% to top banner, ~35% to bottom bar
+# (shifts the video down a touch, closer to the reference proportions).
+BANNER_H=$(( (REMAIN * 65 / 100 / 2) * 2 ))
 BOTTOM_H=$(( FINAL_H - CONTENT_H - BANNER_H ))
 
-# Text styling (~5% of width font, ~3.5% left inset)
-FS=$(python3 -c "print(int(round($W * 0.048)))")
-PAD_X=$(python3 -c "print(int(round($W * 0.035)))")
+# Text styling (~5.2% of width font, horizontally centered)
+FS=$(python3 -c "print(int(round($W * 0.052)))")
+PAD_X="(w-text_w)/2"
 # Position text block flush against the bottom of the banner (just above the
 # video). drawtext y is the top of the glyph; a serif text block takes ~FS px
 # per line + ~0.2*FS leading.
