@@ -11,7 +11,7 @@
 
 set -euo pipefail
 
-FONT="/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf"
+FONT="$(dirname "$0")/fonts/PTSerif-Bold.ttf"
 LINE1="You finally found a page dedicated to"
 LINE2="Explaining Football"
 
@@ -57,9 +57,9 @@ for t in ts:
 
 A = np.median(np.stack(rows), axis=0)
 H = len(A)
-# Threshold: anything above 1.5 std is sharp; below is blur/black.
-# 1.5 is well above typical blur (0.2-0.5) and well below sharp content (3+).
-thr = 1.5
+# Threshold: anything above 2.5 std is firmly sharp; below is blur/black.
+# Higher than before (1.5) to skip the soft transition zone at the blur edge.
+thr = 2.5
 sharp = np.where(A > thr)[0]
 if sharp.size == 0:
     # Fall back: keep entire frame
@@ -67,9 +67,9 @@ if sharp.size == 0:
 else:
     top = int(sharp[0])
     bot = int(sharp[-1])
-    # Small safety margin (4 px each side) and force even
-    top = max(0, ((top - 4)//2)*2)
-    bot = min(H-1, ((bot + 4)//2)*2)
+    # Inset 24 px on each side to bite well past the blur transition.
+    top = max(0, ((top + 24)//2)*2)
+    bot = min(H-1, ((bot - 24)//2)*2)
     h = ((bot - top + 1)//2)*2
     print(f"{top} {h}")
 PY
