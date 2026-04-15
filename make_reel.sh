@@ -93,9 +93,9 @@ REMAIN=$(( FINAL_H - CONTENT_H ))
 BANNER_H=$(( (REMAIN * 65 / 100 / 2) * 2 ))
 BOTTOM_H=$(( FINAL_H - CONTENT_H - BANNER_H ))
 
-# Text styling (~5.2% of width font, horizontally centered)
+# Text styling (~5.2% of width font, left-aligned inset ~3.5% of width)
 FS=$(python3 -c "print(int(round($W * 0.052)))")
-PAD_X="(w-text_w)/2"
+PAD_X=$(python3 -c "print(int(round($W * 0.035)))")
 # Position text block flush against the bottom of the banner (just above the
 # video). drawtext y is the top of the glyph; a serif text block takes ~FS px
 # per line + ~0.2*FS leading.
