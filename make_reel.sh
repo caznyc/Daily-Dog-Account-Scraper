@@ -106,7 +106,7 @@ else:
         top = 0
     # Expand BOTTOM boundary outward only if there's >20 px of blur/dark after
     if bot_raw < H - 20:
-        bot = min(H - 1, ((bot_raw + 8) // 2) * 2)
+        bot = min(H - 1, ((bot_raw + 30) // 2) * 2)
     else:
         bot = ((H - 1) // 2) * 2
     h = ((bot - top + 1) // 2) * 2
