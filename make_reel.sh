@@ -51,9 +51,18 @@ for t in ts:
     p = subprocess.run(
         ["ffmpeg","-hide_banner","-loglevel","error","-ss",f"{t:.2f}",
          "-i", inp, "-frames:v","1","-f","image2","-vcodec","png","-"],
-        capture_output=True, check=True)
-    img = np.array(Image.open(io.BytesIO(p.stdout)).convert("L"), dtype=np.float32)
+        capture_output=True)
+    if p.returncode != 0 or len(p.stdout) == 0:
+        continue
+    try:
+        img = np.array(Image.open(io.BytesIO(p.stdout)).convert("L"), dtype=np.float32)
+    except Exception:
+        continue
     rows.append(np.abs(np.diff(img, axis=1)).std(axis=1))
+
+if not rows:
+    print("0 0")
+    sys.exit(0)
 
 A = np.median(np.stack(rows), axis=0)
 H = len(A)
@@ -105,6 +114,11 @@ else:
 PY
 )"
 echo ">>> Sharp band: y=$CROP_Y  height=$CROP_H  (was ${SRC_H})"
+
+if [[ -z "$CROP_H" || "$CROP_H" == "0" ]]; then
+  echo "ERROR: could not detect sharp content band — skipping." >&2
+  exit 1
+fi
 
 # --- Layout ---
 W=$(( (SRC_W/2)*2 ))

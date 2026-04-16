@@ -16,3 +16,5 @@ build/
 # Source clips downloaded from the "batch" GitHub Release — not tracked,
 # fetch via the release if you need them.
 batch1/
+batch2/
+!batch2-out/*.mp4
