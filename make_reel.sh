@@ -57,16 +57,28 @@ for t in ts:
 
 A = np.median(np.stack(rows), axis=0)
 H = len(A)
-# Threshold 1.5 catches the full sharp band including caption tails at the
-# lower edge. Insets are CONDITIONAL on whether there's an actual blur/dark
-# band to skip past — so already-cropped sources don't get nibbled.
-thr = 1.5
-sharp = np.where(A > thr)[0]
-if sharp.size == 0:
+# Adaptive blur threshold. Blur padding sits very close to the noise
+# floor (typically 0.2-0.5 std); low-detail-but-sharp content (uniform
+# grass, sky) usually sits at >=0.5. Use 1.6x the 15th-percentile row
+# (a robust noise-floor estimate), clamped to <=0.5 so we don't
+# accidentally classify dim real content as blur in clips that are
+# mostly low-texture.
+p15 = float(np.percentile(A, 15))
+thr = min(0.5, p15 * 1.6)
+
+# Walk INWARD from each edge to find the first row that's clearly above
+# the blur floor. This separates blur PADDING (which lives at the edges)
+# from low-detail real content (which can be anywhere in the frame).
+def first_above(arr, t):
+    above = np.where(arr > t)[0]
+    return int(above[0]) if above.size else 0
+
+top_raw = first_above(A, thr)
+bot_raw = H - 1 - first_above(A[::-1], thr)
+
+if bot_raw <= top_raw:
     print(f"0 {H}")
 else:
-    top_raw = int(sharp[0])
-    bot_raw = int(sharp[-1])
     # Push TOP boundary inward only if there's >20 px of blur/dark before content
     if top_raw > 20:
         top = ((top_raw + 30) // 2) * 2
