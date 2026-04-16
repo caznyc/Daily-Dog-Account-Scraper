@@ -57,24 +57,35 @@ for t in ts:
 
 A = np.median(np.stack(rows), axis=0)
 H = len(A)
-# Adaptive blur threshold. Blur padding sits very close to the noise
-# floor (typically 0.2-0.5 std); low-detail-but-sharp content (uniform
-# grass, sky) usually sits at >=0.5. Use 1.6x the 15th-percentile row
-# (a robust noise-floor estimate), clamped to <=0.5 so we don't
-# accidentally classify dim real content as blur in clips that are
-# mostly low-texture.
-p15 = float(np.percentile(A, 15))
-thr = min(0.5, p15 * 1.6)
 
-# Walk INWARD from each edge to find the first row that's clearly above
-# the blur floor. This separates blur PADDING (which lives at the edges)
-# from low-detail real content (which can be anywhere in the frame).
+# Two complementary detectors, take the more aggressive (inner) crop on each
+# side so we trim BOTH heavy blur padding and gradual blur fadeouts.
 def first_above(arr, t):
     above = np.where(arr > t)[0]
     return int(above[0]) if above.size else 0
 
-top_raw = first_above(A, thr)
-bot_raw = H - 1 - first_above(A[::-1], thr)
+# (1) Edge-walk against an adaptive noise-floor threshold. Catches clips
+#     with hard blur padding sitting near the sensor noise floor.
+p15 = float(np.percentile(A, 15))
+thr_floor = min(0.5, p15 * 1.6)
+top_a = first_above(A, thr_floor)
+bot_a = H - 1 - first_above(A[::-1], thr_floor)
+
+# (2) Smoothed fraction-of-peak. Catches clips where the blur is a gradual
+#     fadeout into a faint preview of another shot — the noise floor is
+#     normal but the edges are still clearly less detailed than the centre.
+smooth = np.convolve(A, np.ones(51)/51, mode='same')
+peak = float(np.percentile(smooth, 95))
+thr_peak = peak * 0.40
+above = np.where(smooth > thr_peak)[0]
+if above.size:
+    top_b, bot_b = int(above[0]), int(above[-1])
+else:
+    top_b, bot_b = 0, H - 1
+
+# Combine: more aggressive on each side (max of tops, min of bottoms).
+top_raw = max(top_a, top_b)
+bot_raw = min(bot_a, bot_b)
 
 if bot_raw <= top_raw:
     print(f"0 {H}")
