@@ -20,3 +20,5 @@ batch2/
 !batch2-out/*.mp4
 batch3/
 !batch3-out/*.mp4
+batch4/
+!batch4-out/*.mp4
